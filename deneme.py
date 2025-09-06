@@ -125,62 +125,6 @@ FFMPEG_OPTS = {
     "options": "-vn"
 }
 
-async def ensure_voice(ctx):
-    """Kullanıcı bir ses kanalındaysa bota o kanala gir dir."""
-    if ctx.author.voice is None or ctx.author.voice.channel is None:
-        await ctx.send("Bir ses kanalına bağlı değilsin!")
-        return None
-
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        if voice.channel != ctx.author.voice.channel:
-            await voice.move_to(ctx.author.voice.channel)
-    else:
-        voice = await ctx.author.voice.channel.connect()
-    return voice
-
-@bot.command(name="cal", help="YouTube linkinden müzik çalar. Kullanım: !cal <youtube_linki>")
-async def cal(ctx, url: str):
-    voice = await ensure_voice(ctx)
-    if voice is None:
-        return
-
-    # Halihazırda çalınıyorsa durdur
-    if voice.is_playing():
-        voice.stop()
-
-    try:
-        with YoutubeDL(YDL_OPTS) as ydl:
-            info = ydl.extract_info(url, download=False)
-            if "entries" in info:
-                info = info["entries"][0]
-            stream_url = info["url"]
-            baslik = info.get("title", "Bilinmeyen başlık")
-
-        source = FFmpegPCMAudio(stream_url, **FFMPEG_OPTS)
-        voice.play(source, after=lambda e: print(f"FFmpeg bitti: {e}" if e else "Parça bitti."))
-
-        await ctx.send(f"🎵 Çalınıyor: **{baslik}**")
-    except Exception as e:
-        await ctx.send(f"Çalarken hata oluştu: {e}")
-
-@bot.command(name="durdur", help="Çalan müziği durdurur.")
-async def durdur(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_playing():
-        voice.stop()
-        await ctx.send("⏹️ Müzik durduruldu.")
-    else:
-        await ctx.send("Şu anda bir şey çalmıyor.")
-
-@bot.command(name="cik", help="Ses kanalından çıkar.")
-async def cik(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.disconnect()
-        await ctx.send("🔇 Ses kanalından çıktım.")
-    else:
-        await ctx.send("Zaten bir ses kanalında değilim.")
 
 # ------------------ BOTU BAŞLAT ------------------
 
